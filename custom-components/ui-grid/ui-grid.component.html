@@ -1,0 +1,95 @@
+<div class="grid-border">
+        <nz-table #nzTable
+        [nzScroll]="!!_fixScrollY?{ y: _fixScrollY }:null" 
+        [nzIsPagination]="_pagination" 
+        nzShowSizeChanger
+        [nzPageSizeSelectorValues]="pageSizeValues" 
+        [nzAjaxData]="_data.content" 
+        [nzTotal]="_data.numberOfElements"
+        [nzLoading]="_loading" 
+        [(nzPageIndex)]="_first"
+        (nzPageIndexChange)="refreshData()"
+        [(nzPageSize)]="_rows"
+        (nzPageSizeChange)="refreshData(true)"
+        [nzShowTitle]="showTitle"
+        [nzSize]="'middle'"
+        nzCustomNoResult="没有记录">
+        <div class="table-title" nz-table-title>
+            <ng-template #defaultTitle>
+                <div>
+                    <button class="btn-editcol" nz-button [nzType]="'primary'" *ngIf="buttonGather.showEditColumn" (click)="editCol = !_editCol">
+                        <i class="anticon anticon-edit"></i><span>编辑列</span>
+                    </button>
+                    <button class="btn-export" nz-button [nzType]="'primary'" [nzLoading]="_exportLoading" *ngIf="buttonGather.enableExport" (click)="exportCSVIntenal()">
+                        <i class="anticon anticon-export"></i><span>导出</span>
+                    </button>
+                </div>
+            </ng-template>
+            <ng-template [ngTemplateOutlet]="_titleTpl || defaultTitle"></ng-template>
+        </div>
+        <ng-template #nzFixedHeader [ngIf]="!_fixScrollY">
+            <thead nz-thead>
+                <tr>
+                    <th nz-th nzCheckbox *ngIf="mulitipy">
+                        <label nz-checkbox [(ngModel)]="_allChecked" [nzIndeterminate]="_indeterminate" (ngModelChange)="checkAll($event, nzTable.data)">
+                        </label>
+                    </th>
+                    <th nz-th *ngFor="let column of columns" [nzWidth]="column.width || '120px'">
+                        <span>{{column.header}}</span>
+                    </th>
+                </tr>
+            </thead>
+        </ng-template>
+        <tbody nz-tbody>
+            <tr nz-tbody-tr *ngFor="let data of nzTable.data; let ri = index" (click)="onRowSelectChange(data)" [style.background]="data.checked? '#eee':'#fff'">
+                <td nz-td nzCheckbox *ngIf="mulitipy">
+                    <label #checkbox_item nz-checkbox [(ngModel)]="data.checked" (click)="refreshStatus($event)">
+                    </label>
+                </td>
+                <td nz-td *ngFor="let column of columns">
+                    <ng-template #default_cell>
+                        <ng-container *ngIf="column.field === _iconComp.outField" [ngTemplateOutlet]="_iconComp.iconTemplate" [ngTemplateOutletContext]="data"></ng-container>
+                        <a href="javascript:;" *ngIf="column.link" class="column-link">
+                            <span (click)="onCellClick($event,data,column.field)">{{data[column.field]}}</span>
+                        </a>
+                        <nz-popover *ngIf="!column.link && !column.thumbnail" [nzTrigger]="'hover'" nzOverlayStyle>
+                            <span nz-popover (mouseenter)="onCellMouseover($event,data,column.field)">{{replaceTextOmit(data[column.field], column.textLength?column.textLength: 20)}}</span>
+                            <div *ngIf="(data[column.field].length>(column.textLength?column.textLength: 20)) && !column.defaultTipsHidden">
+                               <ng-template #nzTemplate>
+                                    <p style="max-width: 300px;">{{data[column.field]}}</p>
+                                </ng-template>
+                            </div>
+                        </nz-popover>
+                        <!--图片附件-->
+                        <div *ngIf="column.thumbnail && data[column.field]" yzt-viewer>
+                            <i class="anticon anticon-picture thumbnail" *ngFor="let addr of data[column.field]" target="_blank">
+                                <img style="opacity: 0;position: absolute;left: 0;top: 0;" name="{{addr}}" src="{{addr}}">
+                            </i>
+                        </div>
+                    </ng-template>
+                    <ng-template [ngTemplateOutlet]="default_cell"></ng-template>
+                </td>
+            </tr>
+        </tbody>
+        <span nz-table-footer>Here is footer</span>
+    </nz-table>
+</div>
+
+<div #edit_box class="edit-wrap" *ngIf="_editCol">
+    <div drag-box [box]="edit_box" class="edit-title ant-modal-header">
+        <div class="ant-modal-title">编辑列</div>
+        <button aria-label="Close" class="ant-modal-close ng-star-inserted" (click)="editCol=false">
+            <span class="ant-modal-close-x"></span>
+        </button>
+    </div>
+    <div class="edit-content ant-modal-body">
+        <nz-transfer
+            [nzDataSource]="editColumns"
+            [nzTitles]="['Source', 'Target']"
+            (nzSelectChange)="select($event)"
+            [nzListStyle]="{'width.px': 230, 'height.px': 300, 'text-align': 'left'}"
+            (nzChange)="editChange($event)">
+        </nz-transfer>
+    </div>
+    <div class="edit-footer ant-modal-footer"></div>
+</div>
